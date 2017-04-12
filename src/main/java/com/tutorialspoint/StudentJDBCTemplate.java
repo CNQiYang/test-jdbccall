@@ -1,10 +1,16 @@
 package com.tutorialspoint;
 
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
+
+import com.mysql.cj.core.MysqlType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.SqlInOutParameter;
+import org.springframework.jdbc.core.SqlOutParameter;
+import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
@@ -15,7 +21,13 @@ public class StudentJDBCTemplate implements StudentDAO {
 
     public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
-        this.jdbcCall =  new SimpleJdbcCall(dataSource).withProcedureName("getRecord");
+        this.jdbcCall =  new SimpleJdbcCall(dataSource).withProcedureName("getRecord")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("in_id",Types.INTEGER),
+                        new SqlOutParameter("out_name", Types.VARCHAR),
+                        new SqlOutParameter("out_age", Types.INTEGER)
+                );
     }
     public void create(String name, Integer age) {
         JdbcTemplate jdbcTemplateObject = new JdbcTemplate(dataSource);
@@ -28,7 +40,6 @@ public class StudentJDBCTemplate implements StudentDAO {
     public Student getStudent(Integer id) {
         SqlParameterSource in = new MapSqlParameterSource().addValue("in_id", id);
         Map<String, Object> out = jdbcCall.execute(in);
-
         Student student = new Student();
         student.setId(id);
         student.setName((String) out.get("out_name"));
